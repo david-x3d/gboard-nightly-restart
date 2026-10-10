@@ -31,11 +31,19 @@ Configuration).
 
 ## How it works
 
-`service.sh` runs at boot (late start service), waits for boot to complete, then
-checks the time every 60 seconds. Once the local time is 04:00 or later and the
-restart hasn't happened yet today, it runs `am force-stop <package>`. Android
-starts the keyboard again the next time it is needed.
+`service.sh` runs at boot (late start service) and waits for boot to complete.
+Once the local time is 04:00 or later and the restart hasn't happened yet today,
+it runs `am force-stop <package>`. Android starts the keyboard again the next
+time it is needed.
 
+- **Battery:** no wakelock, and the loop cannot wake the device. It forks one
+  `date` per check and checks every 30 minutes (every 5 minutes between 03:00
+  and the restart), which costs a few milliseconds of CPU per check. The
+  "already restarted today" state is kept in memory, so the restart can never
+  repeat more than once a day, even if storage is read-only.
+- **Default keyboard:** force-stopping the active keyboard makes Android pick a
+  new default keyboard. The module remembers your keyboard and sets it again
+  right after the restart.
 - **Time zone:** the time is re-read on every check, so traveling to another
   time zone just works.
 - **Deep sleep:** if the phone was asleep at 04:00, the restart happens as soon as
@@ -49,7 +57,7 @@ Edit the variables at the top of
 `/data/adb/modules/gboard_nightly_restart/service.sh` and reboot:
 
 - `PKG` – package name to restart
-- `RESTART_TIME` – time as `HHMM` with no leading zero, e.g. `400` for 04:00, `1330` for 13:30
+- `RESTART_TIME` / `EARLY_TIME` – time as `HHMM` with no leading zero, e.g. `400` for 04:00, `1330` for 13:30
 
 ## Build
 
